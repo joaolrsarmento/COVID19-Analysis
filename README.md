@@ -3,6 +3,8 @@ Analyse the covid data in 3 brazilians capitals to estimate the quantity of days
 
 # To run this script:
 
-- python main.py
+```
+$ python3 main.py
+```
 
 # Wait for the graph to pop up.
