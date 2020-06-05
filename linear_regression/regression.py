@@ -44,8 +44,6 @@ class OrdinaryLeastSquaresRegression:
         self.Y = np.log(np.array(y))
         self.X = np.array(x)
 
-        self.r2_list = []
-
     def run(self):
         """
         This method will try to maximize the determination coefficient in the regression method.
@@ -55,41 +53,46 @@ class OrdinaryLeastSquaresRegression:
         """
         deleted = 0
         n = len(self.Y)
-        while deleted < n and n - deleted > 10:
-            # Get data
-            observed = np.delete(self.Y, range(n - deleted, n))
-            x = np.delete(self.X, range(n - deleted, n))
+        results = {}
+        for n0 in range(0, n):
+            for nf in range(n0, n):
+                if nf - n0 > 10:
+                    # Get data
+                    observed = self.Y[n0:nf]
+                    x = self.X[n0:nf]
 
-            # Adjust data
-            ones_column_s = np.ones(len(observed), dtype=np.float64)
-            adjusted_x = np.column_stack((ones_column_s, x))
+                    # Adjust data
+                    ones_column_s = np.ones(len(observed), dtype=np.float64)
+                    adjusted_x = np.column_stack((ones_column_s, x))
 
-            # Fit data
-            _, fitted = self.fit(observed, adjusted_x)
+                    # Fit data
+                    _, fitted = self.fit(observed, adjusted_x)
 
-            # Calculate the r2
-            r2 = self.r2(fitted, observed)
-            # Save it
-            self.r2_list.append(r2)
-            deleted += 1
+                    # Calculate the r2
+                    r2 = self.r2(fitted, observed)
+                    # Save it
+                    if r2 not in results:
+                        results[r2] = n0, nf
 
         r2 = 0
-        outlier = 0
+        rangeObtained = 0, 0
 
-        for i, r in enumerate(self.r2_list):
-            if r > r2:
-                r2 = r
-                outlier = i
-        
-        # Getting result 
-        observed = np.delete(self.Y, range(n - outlier, n))
-        x = np.delete(self.X, range(n - outlier, n))
+        for value in results:
+            if value > r2:
+                print(rangeObtained, value)
+                r2 = value
+                rangeObtained = results[value]
+
+        # Getting result
+        observed = self.Y[rangeObtained[0]: rangeObtained[1]]
+        x = self.X[rangeObtained[0]: rangeObtained[1]]
         ones_column_s = np.ones(len(observed), dtype=np.float64)
         adjusted_x = np.column_stack((ones_column_s, x))
         b, fitted = self.fit(observed, adjusted_x)
 
         # Plot adjusted data
-        fitted_for_estimation = np.append(fitted, [b[0] + b[1] * self.X[i] for i in range(n - outlier, n)])
+        fitted_for_estimation = [b[0] + b[1] * self.X[i] for i in range(n)]
+
         self.plot_results(fitted_for_estimation, observed)
         # Calculate the time
         self.generate_results(fitted, observed, adjusted_x, b)
@@ -187,7 +190,6 @@ class OrdinaryLeastSquaresRegression:
         chi2 = np.dot(fitted_y - observed_y, fitted_y - observed_y)
         ngl = len(observed_y) - 2
         var = chi2 / ngl
-
 
         # Getting covariance matrix
         M_cov = var * np.linalg.inv(np.matmul(adjusted_x.T, adjusted_x))
